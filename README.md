@@ -94,9 +94,12 @@ See [`examples/main.tf`](./examples/main.tf) for more detailed usage patterns.
 | Feature | Basic | Standard | Premium |
 |---------|-------|----------|---------|
 | Included storage | 10 GiB | 100 GiB | 500 GiB |
+| Public network access control | ❌ | ❌ | ✅ |
+| Network rules / firewall | ❌ | ❌ | ✅ |
 | Geo-replication | ❌ | ❌ | ✅ |
 | Private endpoints | ❌ | ❌ | ✅ |
-| Network rules | ❌ | ❌ | ✅ |
 | CMK encryption | ❌ | ❌ | ✅ |
 | Content trust | ❌ | ❌ | ✅ |
 | Zone redundancy | ❌ | ❌ | ✅ |
+| Retention policy | ❌ | ❌ | ✅ |
+| Data endpoint | ❌ | ❌ | ✅ |

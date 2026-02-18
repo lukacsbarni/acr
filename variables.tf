@@ -188,13 +188,11 @@ variable "encryption" {
 (Premium only) Customer-managed key encryption settings.
 Example:
   encryption = {
-    enabled            = true
     key_vault_key_id   = "/subscriptions/.../keys/mykey/..."
     identity_client_id = "00000000-0000-0000-0000-000000000000"
   }
 EOT
   type = object({
-    enabled            = bool
     key_vault_key_id   = string
     identity_client_id = string
   })

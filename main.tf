@@ -36,8 +36,8 @@ resource "azurerm_container_registry" "this" {
   sku                 = var.sku
   admin_enabled       = var.admin_enabled
 
-  # Public network access
-  public_network_access_enabled = var.public_network_access_enabled
+  # Public network access (Premium only - Basic/Standard are always publicly accessible)
+  public_network_access_enabled = var.sku == "Premium" ? var.public_network_access_enabled : true
 
   # Data endpoint (Premium only)
   data_endpoint_enabled = var.sku == "Premium" ? var.data_endpoint_enabled : false
@@ -48,8 +48,8 @@ resource "azurerm_container_registry" "this" {
   # Export policy (Premium only)
   export_policy_enabled = var.sku == "Premium" ? var.export_policy_enabled : true
 
-  # Network rule default action (Premium only)
-  network_rule_bypass_option = var.network_rule_bypass_option
+  # Network rule bypass option (Premium only)
+  network_rule_bypass_option = var.sku == "Premium" ? var.network_rule_bypass_option : "AzureServices"
 
   dynamic "network_rule_set" {
     for_each = var.sku == "Premium" && length(var.network_rule_set) > 0 ? [var.network_rule_set] : []
@@ -107,7 +107,6 @@ resource "azurerm_container_registry" "this" {
   dynamic "encryption" {
     for_each = var.encryption != null && var.sku == "Premium" ? [var.encryption] : []
     content {
-      enabled            = encryption.value.enabled
       key_vault_key_id   = encryption.value.key_vault_key_id
       identity_client_id = encryption.value.identity_client_id
     }
