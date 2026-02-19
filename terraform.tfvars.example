@@ -53,9 +53,7 @@ quarantine_policy_enabled     = false
 #   ip_rules = [
 #     { action = "Allow", ip_range = "1.2.3.4/32" }
 #   ]
-#   virtual_networks = [
-#     { action = "Allow", subnet_id = "/subscriptions/.../subnets/mysubnet" }
-#   ]
+#   # Manage VNet service endpoint rules on the subnet resource directly.
 # }
 
 # ------------------------------------------------------------------------------

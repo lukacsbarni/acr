@@ -129,14 +129,15 @@ EOT
 variable "network_rule_set" {
   description = <<EOT
 (Premium only) Network rule set for the ACR.
+NOTE: In azurerm v4.x the `virtual_network` sub-block was fully removed.
+Only `default_action` and `ip_rules` are supported. VNet service endpoint
+rules must be managed on the subnet resource directly.
 Example:
   network_rule_set = {
     default_action = "Deny"
     ip_rules = [
-      { action = "Allow", ip_range = "1.2.3.4/32" }
-    ]
-    virtual_networks = [
-      { action = "Allow", subnet_id = "/subscriptions/..." }
+      { action = "Allow", ip_range = "1.2.3.4/32" },
+      { action = "Allow", ip_range = "10.0.0.0/24" }
     ]
   }
 EOT

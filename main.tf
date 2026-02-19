@@ -66,14 +66,6 @@ resource "azurerm_container_registry" "this" {
           ip_range = ip_rule.value.ip_range
         }
       }
-
-      dynamic "virtual_network_rule" {
-        for_each = lookup(network_rule_set.value, "virtual_networks", [])
-        content {
-          action    = virtual_network_rule.value.action
-          subnet_id = virtual_network_rule.value.subnet_id
-        }
-      }
     }
   }
 
