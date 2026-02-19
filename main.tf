@@ -2,16 +2,6 @@
 # Azure Container Registry (ACR) - Terraform Module
 ###############################################################################
 
-terraform {
-  required_version = ">= 1.3.0"
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = ">= 3.0.0"
-    }
-  }
-}
-
 # ------------------------------------------------------------------------------
 # Resource Group (optional - only created if create_resource_group = true)
 # ------------------------------------------------------------------------------
