@@ -1,6 +1,6 @@
 # Terraform Module: Azure Container Registry (ACR)
 
-A production-ready Terraform module for deploying Azure Container Registry with support for all SKU tiers and common enterprise features.
+A production-ready Terraform module for deploying Azure Container Registry, compatible with **azurerm v4.x** (tested on `4.58.0`).
 
 ## Features
 
@@ -9,9 +9,18 @@ A production-ready Terraform module for deploying Azure Container Registry with 
 - **Identity**: System-assigned and user-assigned managed identities
 - **Geo-replication** (Premium)
 - **Customer-managed key encryption** (Premium)
-- **Content trust / retention policies** (Premium)
+- **Content trust & retention policies** (Premium) — updated for v4.x API
+- **Anonymous pull access** (Standard/Premium)
+- **Quarantine policy** (Premium)
 - **RBAC role assignments**
 - **Diagnostic settings** (Log Analytics / Storage Account)
+
+## Requirements
+
+| Name      | Version     |
+|-----------|-------------|
+| terraform | >= 1.14.3    |
+| azurerm   | ~> 4.58.0   |
 
 ## Usage
 
@@ -30,14 +39,15 @@ module "acr" {
 }
 ```
 
-See [`examples/main.tf`](./examples/main.tf) for more detailed usage patterns.
+## Migrating from azurerm v3.x
 
-## Requirements
+The following **breaking changes** affect `azurerm_container_registry` in v4.x:
 
-| Name      | Version   |
-|-----------|-----------|
-| terraform | >= 1.3.0  |
-| azurerm   | >= 3.0.0  |
+| v3.x | v4.x | Notes |
+|------|------|-------|
+| `retention_policy { days = 30, enabled = true }` | `retention_policy_in_days = 30` | Block replaced by a scalar property |
+| `trust_policy { enabled = true }` | `trust_policy_enabled = true` | Block replaced by a scalar boolean |
+| `encryption { enabled = true, key_vault_key_id = "...", identity_client_id = "..." }` | `encryption { key_vault_key_id = "...", identity_client_id = "..." }` | `enabled` field removed; toggle encryption by including or omitting the block |
 
 ## Inputs
 
@@ -49,16 +59,20 @@ See [`examples/main.tf`](./examples/main.tf) for more detailed usage patterns.
 | `create_resource_group` | Create the resource group if true | `bool` | `false` | |
 | `sku` | SKU tier: Basic, Standard, Premium | `string` | `"Standard"` | |
 | `admin_enabled` | Enable admin user (not recommended for prod) | `bool` | `false` | |
-| `public_network_access_enabled` | Allow public network access | `bool` | `true` | |
+| `anonymous_pull_enabled` | Anonymous pull access (Standard/Premium) | `bool` | `false` | |
+| `public_network_access_enabled` | Allow public network access (Premium only) | `bool` | `true` | |
+| `network_rule_bypass_option` | Trusted Azure services bypass (Premium only) | `string` | `"AzureServices"` | |
 | `data_endpoint_enabled` | Dedicated data endpoint (Premium) | `bool` | `false` | |
-| `zone_redundancy_enabled` | Zone redundancy (Premium) | `bool` | `false` | |
+| `zone_redundancy_enabled` | Zone redundancy — forces new resource (Premium) | `bool` | `false` | |
+| `export_policy_enabled` | Allow artifact export (Premium) | `bool` | `true` | |
+| `quarantine_policy_enabled` | Quarantine policy (Premium) | `bool` | `false` | |
+| `retention_policy_in_days` | Days to retain untagged manifests (Premium) — replaces v3 block | `number` | `null` | |
+| `trust_policy_enabled` | Enable Docker Content Trust (Premium) — replaces v3 block | `bool` | `false` | |
 | `network_rule_set` | IP and VNet network rules (Premium) | `any` | `{}` | |
-| `georeplications` | Geo-replication locations (Premium) | `any` | `[]` | |
-| `retention_policy` | Untagged manifest retention (Premium) | `object` | `null` | |
-| `trust_policy` | Content trust (Premium) | `object` | `null` | |
+| `georeplications` | Geo-replication locations in alphabetical order (Premium) | `any` | `[]` | |
 | `identity_type` | Managed identity type | `string` | `"SystemAssigned"` | |
-| `identity_ids` | User-assigned identity IDs | `list(string)` | `null` | |
-| `encryption` | CMK encryption settings (Premium) | `object` | `null` | |
+| `identity_ids` | User-assigned identity resource IDs | `list(string)` | `null` | |
+| `encryption` | CMK encryption — omit `enabled` field (v4.x change) (Premium) | `object` | `null` | |
 | `role_assignments` | RBAC role assignments on the ACR | `list(object)` | `[]` | |
 | `private_endpoint` | Private endpoint configuration | `any` | `null` | |
 | `diagnostic_settings` | Log Analytics / Storage diagnostic settings | `any` | `null` | |
@@ -87,13 +101,13 @@ See [`examples/main.tf`](./examples/main.tf) for more detailed usage patterns.
 | `AcrPush` | Pull + push access (e.g. CI/CD pipelines) |
 | `AcrDelete` | Pull, push, and delete |
 | `AcrImageSigner` | Sign images (requires content trust) |
-| `Contributor` | Full management (avoid in prod) |
 
 ## SKU Comparison
 
 | Feature | Basic | Standard | Premium |
 |---------|-------|----------|---------|
 | Included storage | 10 GiB | 100 GiB | 500 GiB |
+| Anonymous pull | ❌ | ✅ | ✅ |
 | Public network access control | ❌ | ❌ | ✅ |
 | Network rules / firewall | ❌ | ❌ | ✅ |
 | Geo-replication | ❌ | ❌ | ✅ |
@@ -102,4 +116,5 @@ See [`examples/main.tf`](./examples/main.tf) for more detailed usage patterns.
 | Content trust | ❌ | ❌ | ✅ |
 | Zone redundancy | ❌ | ❌ | ✅ |
 | Retention policy | ❌ | ❌ | ✅ |
+| Quarantine policy | ❌ | ❌ | ✅ |
 | Data endpoint | ❌ | ❌ | ✅ |

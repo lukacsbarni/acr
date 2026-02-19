@@ -55,10 +55,26 @@ variable "admin_enabled" {
   default     = false
 }
 
+variable "anonymous_pull_enabled" {
+  description = "(Standard and Premium only) Allow anonymous (unauthenticated) pull access to the registry."
+  type        = bool
+  default     = false
+}
+
 variable "public_network_access_enabled" {
-  description = "Allow public network access to the ACR."
+  description = "(Premium only) Allow public network access to the ACR. Ignored on Basic and Standard SKUs."
   type        = bool
   default     = true
+}
+
+variable "network_rule_bypass_option" {
+  description = "(Premium only) Allow trusted Azure services to bypass network rules. Allowed values: AzureServices, None."
+  type        = string
+  default     = "AzureServices"
+  validation {
+    condition     = contains(["AzureServices", "None"], var.network_rule_bypass_option)
+    error_message = "network_rule_bypass_option must be 'AzureServices' or 'None'."
+  }
 }
 
 variable "data_endpoint_enabled" {
@@ -68,25 +84,43 @@ variable "data_endpoint_enabled" {
 }
 
 variable "zone_redundancy_enabled" {
-  description = "(Premium only) Enable zone redundancy for the registry."
+  description = "(Premium only) Enable zone redundancy for the registry. Changing this forces a new resource."
   type        = bool
   default     = false
 }
 
 variable "export_policy_enabled" {
-  description = "(Premium only) Allow artifacts to be exported from the registry."
+  description = "(Premium only) Allow artifacts to be exported from the registry. Requires public_network_access_enabled = false to set to false."
   type        = bool
   default     = true
 }
 
-variable "network_rule_bypass_option" {
-  description = "Allow trusted Azure services to bypass network rules. Allowed values: AzureServices, None."
-  type        = string
-  default     = "AzureServices"
-  validation {
-    condition     = contains(["AzureServices", "None"], var.network_rule_bypass_option)
-    error_message = "network_rule_bypass_option must be 'AzureServices' or 'None'."
-  }
+variable "quarantine_policy_enabled" {
+  description = "(Premium only) Enable quarantine policy. Images pushed to the registry must pass a vulnerability scan before they can be pulled."
+  type        = bool
+  default     = false
+}
+
+# ------------------------------------------------------------------------------
+# Retention & Trust Policy (Premium only)
+# ------------------------------------------------------------------------------
+variable "retention_policy_in_days" {
+  description = <<EOT
+(Premium only) Number of days to retain untagged manifests before purging.
+NOTE: In azurerm v4.x this replaces the deprecated `retention_policy` block from v3.x.
+Set to null to disable.
+EOT
+  type        = number
+  default     = null
+}
+
+variable "trust_policy_enabled" {
+  description = <<EOT
+(Premium only) Enable content trust (Docker Content Trust) for the registry.
+NOTE: In azurerm v4.x this replaces the deprecated `trust_policy` block from v3.x.
+EOT
+  type        = bool
+  default     = false
 }
 
 # ------------------------------------------------------------------------------
@@ -116,6 +150,8 @@ EOT
 variable "georeplications" {
   description = <<EOT
 (Premium only) List of geo-replication locations.
+The list cannot contain the primary registry location.
+Locations must be specified in alphabetical order.
 Example:
   georeplications = [
     {
@@ -130,65 +166,33 @@ EOT
 }
 
 # ------------------------------------------------------------------------------
-# Retention Policy (Premium only)
-# ------------------------------------------------------------------------------
-variable "retention_policy" {
-  description = <<EOT
-(Premium only) Retention policy for untagged manifests.
-Example:
-  retention_policy = {
-    days    = 30
-    enabled = true
-  }
-EOT
-  type = object({
-    days    = number
-    enabled = bool
-  })
-  default = null
-}
-
-# ------------------------------------------------------------------------------
-# Trust Policy (Premium only)
-# ------------------------------------------------------------------------------
-variable "trust_policy" {
-  description = <<EOT
-(Premium only) Enable content trust (Docker Content Trust).
-Example:
-  trust_policy = {
-    enabled = true
-  }
-EOT
-  type = object({
-    enabled = bool
-  })
-  default = null
-}
-
-# ------------------------------------------------------------------------------
 # Identity
 # ------------------------------------------------------------------------------
 variable "identity_type" {
-  description = "Type of managed identity. Allowed values: None, SystemAssigned, UserAssigned, SystemAssigned, UserAssigned."
+  description = "Type of managed identity. Allowed values: None, SystemAssigned, UserAssigned, 'SystemAssigned, UserAssigned'."
   type        = string
   default     = "SystemAssigned"
 }
 
 variable "identity_ids" {
-  description = "List of user-assigned managed identity IDs. Required when identity_type includes UserAssigned."
+  description = "List of user-assigned managed identity resource IDs. Required when identity_type includes UserAssigned."
   type        = list(string)
   default     = null
 }
 
 # ------------------------------------------------------------------------------
 # Encryption (Premium only)
+# To enable CMK, provide this object. To disable, set to null.
 # ------------------------------------------------------------------------------
 variable "encryption" {
   description = <<EOT
-(Premium only) Customer-managed key encryption settings.
+(Premium only) Customer-managed key (CMK) encryption settings.
+NOTE: In azurerm v4.x the `enabled` field inside the encryption block was removed.
+      Provide this object to enable CMK; set to null to disable.
+Requires a UserAssigned identity.
 Example:
   encryption = {
-    key_vault_key_id   = "/subscriptions/.../keys/mykey/..."
+    key_vault_key_id   = "/subscriptions/.../keys/mykey/abc123"
     identity_client_id = "00000000-0000-0000-0000-000000000000"
   }
 EOT
@@ -204,7 +208,7 @@ EOT
 # ------------------------------------------------------------------------------
 variable "diagnostic_settings" {
   description = <<EOT
-Optional diagnostic settings to forward logs/metrics.
+Optional diagnostic settings to forward logs and metrics to Log Analytics or Storage.
 Example:
   diagnostic_settings = {
     name                       = "acr-diag"
@@ -222,7 +226,7 @@ EOT
 # ------------------------------------------------------------------------------
 variable "role_assignments" {
   description = <<EOT
-List of role assignments to create on the ACR.
+List of RBAC role assignments to create on the ACR scope.
 Example:
   role_assignments = [
     {
@@ -247,7 +251,8 @@ EOT
 # ------------------------------------------------------------------------------
 variable "private_endpoint" {
   description = <<EOT
-Optional private endpoint configuration.
+Optional private endpoint configuration. Recommended with Premium SKU when
+public_network_access_enabled = false.
 Example:
   private_endpoint = {
     name                 = "acr-pe"

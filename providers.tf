@@ -3,11 +3,11 @@
 ###############################################################################
 
 terraform {
-  required_version = ">= 1.3.0"
+  required_version = ">= 1.9.0"
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = ">= 3.0.0"
+      version = "~> 4.58.0"
     }
   }
 }
@@ -15,8 +15,4 @@ terraform {
 provider "azurerm" {
   features {}
 
-  # Optionally set via environment variables:
-  #   ARM_SUBSCRIPTION_ID, ARM_TENANT_ID, ARM_CLIENT_ID, ARM_CLIENT_SECRET
-  # subscription_id = var.subscription_id
-  # tenant_id       = var.tenant_id
 }

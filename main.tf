@@ -26,21 +26,34 @@ resource "azurerm_container_registry" "this" {
   sku                 = var.sku
   admin_enabled       = var.admin_enabled
 
+  # Anonymous pull (Standard and Premium only)
+  anonymous_pull_enabled = contains(["Standard", "Premium"], var.sku) ? var.anonymous_pull_enabled : false
+
   # Public network access (Premium only - Basic/Standard are always publicly accessible)
   public_network_access_enabled = var.sku == "Premium" ? var.public_network_access_enabled : true
+
+  # Network rule bypass option (Premium only)
+  network_rule_bypass_option = var.sku == "Premium" ? var.network_rule_bypass_option : "AzureServices"
 
   # Data endpoint (Premium only)
   data_endpoint_enabled = var.sku == "Premium" ? var.data_endpoint_enabled : false
 
-  # Zone redundancy (Premium only)
+  # Zone redundancy (Premium only - forces new resource if changed)
   zone_redundancy_enabled = var.sku == "Premium" ? var.zone_redundancy_enabled : false
 
   # Export policy (Premium only)
   export_policy_enabled = var.sku == "Premium" ? var.export_policy_enabled : true
 
-  # Network rule bypass option (Premium only)
-  network_rule_bypass_option = var.sku == "Premium" ? var.network_rule_bypass_option : "AzureServices"
+  # Quarantine policy (Premium only)
+  quarantine_policy_enabled = var.sku == "Premium" ? var.quarantine_policy_enabled : false
 
+  # Retention policy in days (Premium only)
+  retention_policy_in_days = var.sku == "Premium" ? var.retention_policy_in_days : null
+
+  # Trust policy (Premium only)
+  trust_policy_enabled = var.sku == "Premium" ? var.trust_policy_enabled : false
+
+  # Network rule set (Premium only)
   dynamic "network_rule_set" {
     for_each = var.sku == "Premium" && length(var.network_rule_set) > 0 ? [var.network_rule_set] : []
     content {
@@ -64,6 +77,7 @@ resource "azurerm_container_registry" "this" {
     }
   }
 
+  # Geo-replication (Premium only)
   dynamic "georeplications" {
     for_each = var.sku == "Premium" ? var.georeplications : []
     content {
@@ -74,26 +88,13 @@ resource "azurerm_container_registry" "this" {
     }
   }
 
-  dynamic "retention_policy" {
-    for_each = var.retention_policy != null && var.sku == "Premium" ? [var.retention_policy] : []
-    content {
-      days    = retention_policy.value.days
-      enabled = retention_policy.value.enabled
-    }
-  }
-
-  dynamic "trust_policy" {
-    for_each = var.trust_policy != null && var.sku == "Premium" ? [var.trust_policy] : []
-    content {
-      enabled = trust_policy.value.enabled
-    }
-  }
-
+  # Managed Identity
   identity {
     type         = var.identity_type
     identity_ids = var.identity_ids
   }
 
+  # Customer-Managed Key encryption (Premium only)
   dynamic "encryption" {
     for_each = var.encryption != null && var.sku == "Premium" ? [var.encryption] : []
     content {
@@ -158,7 +159,7 @@ resource "azurerm_private_endpoint" "this" {
   }
 
   dynamic "private_dns_zone_group" {
-    for_each = lookup(var.private_endpoint, "private_dns_zone_ids", []) != [] ? [1] : []
+    for_each = length(lookup(var.private_endpoint, "private_dns_zone_ids", [])) > 0 ? [1] : []
     content {
       name                 = "${var.acr_name}-dns-group"
       private_dns_zone_ids = var.private_endpoint.private_dns_zone_ids

@@ -21,15 +21,29 @@ tags = {
 # ------------------------------------------------------------------------------
 # SKU & Core Settings
 # ------------------------------------------------------------------------------
-sku           = "Standard"   # Basic | Standard | Premium
+sku           = "Standard"  # Basic | Standard | Premium
 admin_enabled = false
 
-public_network_access_enabled = true   # Premium only; ignored on Basic/Standard
-network_rule_bypass_option    = "AzureServices"  # AzureServices | None (Premium only)
+# Standard and Premium only
+anonymous_pull_enabled = false
 
-data_endpoint_enabled   = false  # Premium only
-zone_redundancy_enabled = false  # Premium only
-export_policy_enabled   = true   # Premium only
+# Premium only - ignored on Basic/Standard
+public_network_access_enabled = true
+network_rule_bypass_option    = "AzureServices"  # AzureServices | None
+data_endpoint_enabled         = false
+zone_redundancy_enabled       = false
+export_policy_enabled         = true
+quarantine_policy_enabled     = false
+
+# ------------------------------------------------------------------------------
+# Retention & Trust Policy (Premium only)
+# ------------------------------------------------------------------------------
+
+# Set to a number of days to enable, or null to disable
+# retention_policy_in_days = 30
+
+# Enable Docker Content Trust
+# trust_policy_enabled = false
 
 # ------------------------------------------------------------------------------
 # Network Rules (Premium only)
@@ -46,6 +60,7 @@ export_policy_enabled   = true   # Premium only
 
 # ------------------------------------------------------------------------------
 # Geo-Replication (Premium only)
+# Must be in alphabetical order and cannot include the primary location.
 # ------------------------------------------------------------------------------
 # georeplications = [
 #   {
@@ -56,28 +71,15 @@ export_policy_enabled   = true   # Premium only
 # ]
 
 # ------------------------------------------------------------------------------
-# Retention Policy (Premium only)
-# ------------------------------------------------------------------------------
-# retention_policy = {
-#   days    = 30
-#   enabled = true
-# }
-
-# ------------------------------------------------------------------------------
-# Trust Policy (Premium only)
-# ------------------------------------------------------------------------------
-# trust_policy = {
-#   enabled = true
-# }
-
-# ------------------------------------------------------------------------------
 # Identity
 # ------------------------------------------------------------------------------
-identity_type = "SystemAssigned"   # None | SystemAssigned | UserAssigned | SystemAssigned, UserAssigned
-# identity_ids = []                # Required if identity_type includes UserAssigned
+identity_type = "SystemAssigned"  # None | SystemAssigned | UserAssigned | SystemAssigned, UserAssigned
+# identity_ids = []               # Required if identity_type includes UserAssigned
 
 # ------------------------------------------------------------------------------
 # Encryption (Premium only)
+# Provide this object to enable CMK; comment out or set to null to disable.
+# Requires identity_type to include UserAssigned.
 # ------------------------------------------------------------------------------
 # encryption = {
 #   key_vault_key_id   = "/subscriptions/.../keys/mykey/abc123"
